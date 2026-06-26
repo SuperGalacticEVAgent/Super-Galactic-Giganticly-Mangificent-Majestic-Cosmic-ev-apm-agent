@@ -15,7 +15,7 @@ Outputs:
 * Remaining Useful Life (RUL) estimates
 * Optimal charging recommendations
 * Battery replacement forecasting
-* 
+
 Benefits:
 * Increased battery lifespan
 * Reduced downtime
