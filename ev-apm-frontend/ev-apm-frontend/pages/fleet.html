@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Fleet Overview — ASSET/INTEL</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="../css/styles.css">
+</head>
+<body class="antialiased">
+
+<nav class="navbar glass">
+  <div class="navbar-inner">
+    <a href="../index.html" class="navbar-logo">
+      <span class="dot pulse-green"></span>
+      ASSET<span style="color:var(--accent-cyan)">/</span>INTEL
+    </a>
+    <ul class="navbar-nav">
+      <li><a href="fleet.html">Fleet</a></li>
+      <li><a href="alerts.html">Alerts</a></li>
+      <li><a href="predictions.html">Predictions</a></li>
+      <li><a href="dashboard.html">Console</a></li>
+    </ul>
+    <button class="btn-primary magnetic" style="padding:10px 20px;font-size:11px" data-open="connect-modal">
+      + Connect Vehicle
+    </button>
+  </div>
+</nav>
+
+<div class="page-hero">
+  <span class="eyebrow">Live fleet</span>
+  <h1>Fleet Overview</h1>
+  <p>All vehicles, their battery health, live voltage, and state of charge — updated every few seconds.</p>
+</div>
+
+<main style="max-width:80rem;margin:0 auto;padding:0 40px 80px">
+
+  <!-- ── Live telemetry cards (NEW) ── -->
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;margin-bottom:32px">
+
+    <!-- Battery Voltage Card -->
+    <div class="metric-card" id="card-voltage">
+      <div class="label">
+        Live Battery Voltage
+        <span style="width:6px;height:6px;border-radius:50%;background:var(--accent-green);display:inline-block" class="pulse-green"></span>
+      </div>
+      <div class="value" id="val-voltage">
+        <span id="voltage-number">—</span><span>V</span>
+      </div>
+      <div class="live-gauge-track">
+        <div class="live-gauge-fill" id="voltage-bar" style="width:0%;background:var(--accent-cyan)"></div>
+      </div>
+      <div class="delta" style="color:var(--text-secondary)" id="voltage-label">Waiting for telemetry…</div>
+    </div>
+
+    <!-- State of Charge Card -->
+    <div class="metric-card" id="card-soc">
+      <div class="label">
+        State of Charge
+        <span style="width:6px;height:6px;border-radius:50%;background:var(--accent-green);display:inline-block" class="pulse-green"></span>
+      </div>
+      <div class="value" id="val-soc">
+        <span id="soc-number">—</span><span>%</span>
+      </div>
+      <div class="live-gauge-track">
+        <div class="live-gauge-fill" id="soc-bar" style="width:0%;background:var(--accent-green)"></div>
+      </div>
+      <div class="delta" style="color:var(--text-secondary)" id="soc-label">Waiting for telemetry…</div>
+    </div>
+
+    <!-- Fleet avg SoH -->
+    <div class="metric-card">
+      <div class="label">
+        Fleet Avg Health (SoH)
+        <span style="width:6px;height:6px;border-radius:50%;background:var(--accent-green);display:inline-block"></span>
+      </div>
+      <div class="value">
+        <span id="avg-soh">—</span><span>%</span>
+      </div>
+      <div class="delta" style="color:var(--accent-green)" id="soh-delta">Loading…</div>
+    </div>
+
+    <!-- Active alerts -->
+    <div class="metric-card" id="alert-count-card">
+      <div class="label">
+        Active Alerts
+        <span style="width:6px;height:6px;border-radius:50%;background:var(--accent-red);display:inline-block" id="alert-dot"></span>
+      </div>
+      <div class="value" style="color:var(--accent-red)">
+        <span id="alert-count">—</span>
+      </div>
+      <div class="delta"><a href="alerts.html" style="color:var(--accent-cyan);text-decoration:none;font-family:var(--font-mono);font-size:12px">View all alerts →</a></div>
+    </div>
+
+  </div>
+
+  <!-- ── Vehicle selector (live polling) ── -->
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+    <div style="font-family:var(--font-mono);font-size:11px;text-transform:uppercase;color:var(--text-secondary)">
+      Select a vehicle below to see its live telemetry in the cards above
+    </div>
+    <div style="display:flex;align-items:center;gap:8px">
+      <label class="form-label" style="margin:0">Poll interval</label>
+      <select id="poll-interval" style="background:var(--bg-elevated);border:1px solid var(--border-divider);color:var(--text-primary);padding:6px 12px;font-family:var(--font-mono);font-size:12px;border-radius:2px">
+        <option value="3000">3s</option>
+        <option value="5000" selected>5s</option>
+        <option value="10000">10s</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- ── Vehicle table ── -->
+  <div class="glass" style="border-radius:4px;overflow:hidden">
+    <table class="vehicle-table" id="vehicle-table">
+      <thead>
+        <tr>
+          <th>Vehicle ID</th>
+          <th>Model</th>
+          <th>State of Health</th>
+          <th>SoC %</th>
+          <th>Temp (°C)</th>
+          <th>Cycles</th>
+          <th>Status</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody id="vehicle-tbody">
+        <tr>
+          <td colspan="8" style="text-align:center;color:var(--text-secondary);padding:40px">
+            Loading fleet data…
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ── No vehicles message (hidden by default) ── -->
+  <div id="no-vehicles" style="display:none;text-align:center;padding:80px 40px">
+    <div style="font-size:40px;margin-bottom:16px">🚗</div>
+    <div class="font-display text-white" style="font-size:20px;font-weight:600;margin-bottom:8px">No vehicles connected yet</div>
+    <p style="color:var(--text-secondary);margin-bottom:24px">Connect your first vehicle to start monitoring battery health.</p>
+    <button class="btn-primary" data-open="connect-modal">+ Connect Vehicle</button>
+  </div>
+
+</main>
+
+<!-- CONNECT VEHICLE MODAL (same on every page) -->
+<div class="modal-overlay" id="connect-modal" role="dialog" aria-modal="true">
+  <div class="modal-box">
+    <button class="modal-close">✕</button>
+    <div class="connect-step active">
+      <div class="eyebrow" style="margin-bottom:12px">Connect Vehicle</div>
+      <h3 class="font-display text-white" style="font-size:22px;font-weight:600;margin-bottom:20px">Add a vehicle to the fleet</h3>
+      <label class="form-label">Vehicle ID</label>
+      <input class="form-input" id="connect-vehicle-id" placeholder="e.g. EV-014" style="margin-bottom:16px">
+      <label class="form-label">Model (optional)</label>
+      <input class="form-input" id="connect-vehicle-model" placeholder="e.g. Tata Nexon EV" style="margin-bottom:24px">
+      <button class="btn-primary" id="connect-confirm-btn" style="width:100%;justify-content:center">Connect Vehicle</button>
+    </div>
+    <div class="connect-step">
+      <div style="text-align:center;padding:16px 0">
+        <div style="font-size:48px;margin-bottom:16px">✅</div>
+        <h3 class="font-display text-white" style="font-size:20px;margin-bottom:8px">
+          <span id="connected-vehicle-id" style="color:var(--accent-cyan)"></span> is live
+        </h3>
+        <p style="color:var(--text-secondary);font-size:14px;margin-bottom:24px">Vehicle registered and ready to receive telemetry.</p>
+        <button class="btn-primary" id="connect-done-btn" style="width:100%;justify-content:center">Done</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="../js/app.js"></script>
+<script>
+// ─────────────────────────────────────────────────
+// FLEET PAGE LOGIC
+// ─────────────────────────────────────────────────
+
+let selectedVehicle = null;
+let pollTimer       = null;
+
+// ── Load the vehicle table from the backend ──
+async function loadFleet() {
+  try {
+    /*
+      BACKEND INTEGRATION:
+      Calls GET /api/v1/telemetry/{vehicle_id}/recent for each vehicle.
+      You may want to add GET /api/v1/vehicles to your backend for efficiency.
+      For now we use a hardcoded list of known vehicle IDs or localStorage.
+    */
+
+    // Try to get vehicle list — falls back to demo data if backend offline
+    let vehicles;
+    try {
+      // BACKEND INTEGRATION: GET /api/v1/vehicles
+      vehicles = await api('/vehicles');
+    } catch {
+      // DEMO DATA — used only if the backend is unreachable
+      vehicles = [
+        { vehicle_id:'EV-001', model:'Tata Nexon EV',   latest_soh:0.92, latest_soc:0.81, latest_temp:34, cycle_count:312, active_alerts:0 },
+        { vehicle_id:'EV-002', model:'MG ZS EV',        latest_soh:0.78, latest_soc:0.64, latest_temp:38, cycle_count:521, active_alerts:1 },
+        { vehicle_id:'EV-003', model:'BYD Atto 3',      latest_soh:0.61, latest_soc:0.45, latest_temp:56, cycle_count:801, active_alerts:2 },
+        { vehicle_id:'EV-004', model:'Tata Tigor EV',   latest_soh:0.87, latest_soc:0.90, latest_temp:31, cycle_count:201, active_alerts:0 },
+      ];
+    }
+
+    if (!vehicles || vehicles.length === 0) {
+      document.getElementById('vehicle-table').style.display = 'none';
+      document.getElementById('no-vehicles').style.display = 'block';
+      return;
+    }
+
+    // Update fleet stats
+    const avgSoH = vehicles.reduce((s, v) => s + (v.latest_soh || 0), 0) / vehicles.length;
+    document.getElementById('avg-soh').textContent = (avgSoH * 100).toFixed(1);
+    document.getElementById('soh-delta').textContent = `Across ${vehicles.length} vehicle${vehicles.length === 1 ? '' : 's'}`;
+    const totalAlerts = vehicles.reduce((s, v) => s + (v.active_alerts || 0), 0);
+    document.getElementById('alert-count').textContent = totalAlerts;
+
+    // Render table rows
+    const tbody = document.getElementById('vehicle-tbody');
+    tbody.innerHTML = vehicles.map(v => {
+      const soh     = v.latest_soh ?? 0;
+      const sohPct  = (soh * 100).toFixed(1);
+      const status  = soh >= 0.80 ? 'good' : soh >= 0.60 ? 'warning' : 'critical';
+      const badgeLbl= status === 'good' ? 'Healthy' : status === 'warning' ? 'Watch' : 'Critical';
+      const alerts  = v.active_alerts || 0;
+
+      return `
+        <tr onclick="selectVehicle('${v.vehicle_id}', ${v.latest_soc ?? 0}, ${soh})" style="${selectedVehicle === v.vehicle_id ? 'background:rgba(0,229,255,0.04)' : ''}">
+          <td style="color:#fff;font-weight:500">${v.vehicle_id}</td>
+          <td>${v.model || '—'}</td>
+          <td>
+            <span style="color:${soh >= 0.80 ? 'var(--accent-green)' : soh >= 0.60 ? 'var(--accent-amber)' : 'var(--accent-red)'}">${sohPct}%</span>
+          </td>
+          <td>${v.latest_soc != null ? (v.latest_soc * 100).toFixed(1) + '%' : '—'}</td>
+          <td>${v.latest_temp != null ? v.latest_temp.toFixed(1) : '—'}</td>
+          <td>${v.cycle_count ?? '—'}</td>
+          <td><span class="badge badge-${status}">${badgeLbl}</span>${alerts > 0 ? ` <span style="color:var(--accent-red);font-size:10px">+${alerts}</span>` : ''}</td>
+          <td>
+            <a href="predictions.html?vehicle=${v.vehicle_id}" style="color:var(--accent-cyan);font-size:11px;font-family:var(--font-mono);text-decoration:none;margin-right:12px">Predict →</a>
+            <a href="alerts.html?vehicle=${v.vehicle_id}" style="color:var(--accent-amber);font-size:11px;font-family:var(--font-mono);text-decoration:none">Alerts</a>
+          </td>
+        </tr>
+      `;
+    }).join('');
+
+    // Auto-select first vehicle for live cards
+    if (!selectedVehicle && vehicles[0]) {
+      selectVehicle(vehicles[0].vehicle_id, vehicles[0].latest_soc, vehicles[0].latest_soh);
+    }
+
+  } catch (err) {
+    console.error('Fleet load error:', err);
+  }
+}
+
+// ── Select a vehicle → start polling live telemetry for it ──
+function selectVehicle(vehicleId, initialSoC, initialSoH) {
+  selectedVehicle = vehicleId;
+  // Real voltage isn't in the fleet summary — the live poll below fills
+  // the voltage card a moment after this. SoC we already have, so show it now.
+  if (initialSoC) updateSoCCard(initialSoC * 100);
+  toast(`Monitoring: ${vehicleId}`, 'info', 2000);
+  startLivePolling();
+}
+
+// ── Live polling: fetch latest telemetry for selected vehicle ──
+function startLivePolling() {
+  if (pollTimer) clearInterval(pollTimer);
+  const interval = parseInt(document.getElementById('poll-interval').value);
+  pollTimer = setInterval(pollVehicle, interval);
+  pollVehicle(); // immediate first call
+}
+
+async function pollVehicle() {
+  if (!selectedVehicle) return;
+  try {
+    /*
+      BACKEND INTEGRATION:
+      Calls GET /api/v1/telemetry/{vehicle_id}/recent?limit=1
+      Returns the most recent telemetry reading.
+    */
+    const data = await api(`/telemetry/${selectedVehicle}/recent?limit=1`);
+    if (data && data[0]) {
+      const row = data[0];
+      updateVoltageCard(row.battery_voltage);
+      updateSoCCard(row.state_of_charge * 100);
+    }
+  } catch {
+    // Backend offline — silently skip (demo data already showing)
+  }
+}
+
+// ── Update the Voltage card ──
+function updateVoltageCard(voltage) {
+  document.getElementById('voltage-number').textContent = voltage ? voltage.toFixed(1) : '—';
+  // EV pack voltage typically 300–450V → scale bar accordingly
+  const pct = voltage ? Math.min(100, Math.max(0, ((voltage - 300) / 150) * 100)) : 0;
+  document.getElementById('voltage-bar').style.width = pct + '%';
+  const color = voltage > 420 ? 'var(--accent-green)' : voltage > 360 ? 'var(--accent-cyan)' : 'var(--accent-amber)';
+  document.getElementById('voltage-bar').style.background = color;
+  document.getElementById('voltage-label').textContent = selectedVehicle ? `Vehicle: ${selectedVehicle}` : '';
+  document.getElementById('voltage-label').style.color = 'var(--text-secondary)';
+}
+
+// ── Update the SoC card ──
+function updateSoCCard(socPct) {
+  document.getElementById('soc-number').textContent = socPct ? socPct.toFixed(1) : '—';
+  document.getElementById('soc-bar').style.width = (socPct || 0) + '%';
+  const color = socPct > 60 ? 'var(--accent-green)' : socPct > 30 ? 'var(--accent-amber)' : 'var(--accent-red)';
+  document.getElementById('soc-bar').style.background = color;
+  document.getElementById('soc-label').textContent = socPct > 80 ? 'Well charged' : socPct > 30 ? 'Moderate charge' : '⚠ Low charge';
+  document.getElementById('soc-label').style.color = color;
+}
+
+// ── React to real-time alerts ──
+document.addEventListener('new-alert', e => {
+  const alert = e.detail;
+  // Update alert count badge
+  const countEl = document.getElementById('alert-count');
+  if (countEl) countEl.textContent = parseInt(countEl.textContent || 0) + 1;
+  // If it's for the selected vehicle, reload fleet
+  if (alert.vehicle_id === selectedVehicle) loadFleet();
+});
+
+// ── Change poll interval ──
+document.getElementById('poll-interval').addEventListener('change', () => {
+  if (selectedVehicle) startLivePolling();
+});
+
+// ── Initial load ──
+loadFleet();
+</script>
+</body>
+</html>

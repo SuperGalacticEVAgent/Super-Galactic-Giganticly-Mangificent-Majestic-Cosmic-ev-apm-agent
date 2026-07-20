@@ -1,0 +1,16 @@
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Keep generated reports local unless you intentionally share them.
+reports/
+# Trained models
+*.pkl
+models/
+
+# Large datasets (optional)
+dataset/
+*.csv

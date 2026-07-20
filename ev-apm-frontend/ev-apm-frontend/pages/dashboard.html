@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Live Console — ASSET/INTEL</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+<link rel="stylesheet" href="../css/styles.css">
+</head>
+<body class="antialiased">
+
+<nav class="navbar glass">
+  <div class="navbar-inner">
+    <a href="../index.html" class="navbar-logo">
+      <span class="dot pulse-green"></span>
+      ASSET<span style="color:var(--accent-cyan)">/</span>INTEL
+    </a>
+    <ul class="navbar-nav">
+      <li><a href="fleet.html">Fleet</a></li>
+      <li><a href="alerts.html">Alerts</a></li>
+      <li><a href="predictions.html">Predictions</a></li>
+      <li><a href="dashboard.html">Console</a></li>
+    </ul>
+    <button class="btn-primary magnetic" style="padding:10px 20px;font-size:11px" data-open="connect-modal">
+      + Connect Vehicle
+    </button>
+  </div>
+</nav>
+
+<div class="page-hero" style="padding-bottom:40px">
+  <span class="eyebrow">Operator view</span>
+  <div style="display:flex;align-items:flex-end;justify-content:space-between;flex-wrap:wrap;gap:16px">
+    <h1 style="margin-bottom:0">Live Console</h1>
+    <div style="display:flex;align-items:center;gap:8px;font-family:var(--font-mono);font-size:11px;color:var(--text-secondary);padding-bottom:8px">
+      <span class="pulse-green" style="width:6px;height:6px;border-radius:50%;background:var(--accent-green);display:inline-block"></span>
+      Live · <span id="last-updated">loading…</span>
+    </div>
+  </div>
+</div>
+
+<main style="max-width:80rem;margin:0 auto;padding:0 40px 80px">
+
+  <!-- ── Top metric cards ── -->
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:20px">
+
+    <!-- Battery health (YOUR REAL DATA HERE) -->
+    <div class="metric-card">
+      <div class="label">Battery Health · Fleet avg <span style="width:6px;height:6px;border-radius:50%;background:var(--accent-green);display:inline-block"></span></div>
+      <div class="value"><span id="dash-soh">98</span><span>%</span></div>
+      <div class="delta" id="dash-soh-delta" style="color:var(--accent-green)">▲ loading…</div>
+    </div>
+
+    <!-- Live voltage (NEW CARD) -->
+    <div class="metric-card">
+      <div class="label">Fleet Avg Voltage <span style="width:6px;height:6px;border-radius:50%;background:var(--accent-cyan);display:inline-block" class="pulse-green"></span></div>
+      <div class="value"><span id="dash-voltage">—</span><span>V</span></div>
+      <div class="live-gauge-track" style="margin-top:12px">
+        <div class="live-gauge-fill" id="dash-voltage-bar" style="width:0%;background:var(--accent-cyan)"></div>
+      </div>
+      <div class="delta" id="dash-voltage-label" style="color:var(--text-secondary)">Waiting for telemetry…</div>
+    </div>
+
+    <!-- State of charge (NEW CARD) -->
+    <div class="metric-card">
+      <div class="label">Fleet Avg State of Charge <span style="width:6px;height:6px;border-radius:50%;background:var(--accent-green);display:inline-block" class="pulse-green"></span></div>
+      <div class="value"><span id="dash-soc">—</span><span>%</span></div>
+      <div class="live-gauge-track" style="margin-top:12px">
+        <div class="live-gauge-fill" id="dash-soc-bar" style="width:0%;background:var(--accent-green)"></div>
+      </div>
+      <div class="delta" id="dash-soc-label" style="color:var(--text-secondary)">Waiting for telemetry…</div>
+    </div>
+
+    <!-- Critical alerts -->
+    <div class="metric-card critical">
+      <div class="absolute -inset-px rounded-sm pointer-events-none pulse-red opacity-60" id="critical-pulse" style="display:none"></div>
+      <div class="label">
+        Critical Alerts
+        <span style="width:6px;height:6px;border-radius:50%;background:var(--accent-red);display:inline-block" class="pulse-amber-dot" id="critical-dot"></span>
+      </div>
+      <div class="value" style="color:var(--accent-red)"><span id="dash-critical">0</span></div>
+      <div class="delta"><a href="alerts.html?severity=critical" style="color:var(--accent-cyan);font-family:var(--font-mono);font-size:12px;text-decoration:none">View critical →</a></div>
+    </div>
+
+  </div>
+
+  <!-- ── Degradation chart (from original) ── -->
+  <div class="glass" style="border-radius:4px;padding:28px 32px;margin-bottom:20px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:12px">
+      <span style="font-family:var(--font-mono);font-size:11px;text-transform:uppercase;letter-spacing:.1em;color:var(--text-secondary)">Fleet-wide battery degradation curve · 12 months</span>
+      <div style="display:flex;gap:16px;font-family:var(--font-mono);font-size:11px;color:var(--text-secondary)">
+        <span style="display:flex;align-items:center;gap:6px"><span style="width:12px;height:2px;background:var(--accent-cyan);display:inline-block"></span>Predicted</span>
+        <span style="display:flex;align-items:center;gap:6px"><span style="width:12px;height:2px;background:var(--accent-green);display:inline-block"></span>Actual</span>
+      </div>
+    </div>
+    <svg viewBox="0 0 900 260" style="width:100%;height:auto">
+      <g stroke="var(--border-divider)" stroke-width="1">
+        <line x1="0" y1="20" x2="900" y2="20"/>
+        <line x1="0" y1="80" x2="900" y2="80"/>
+        <line x1="0" y1="140" x2="900" y2="140"/>
+        <line x1="0" y1="200" x2="900" y2="200"/>
+      </g>
+      <g font-family="JetBrains Mono" font-size="10" fill="var(--text-secondary)" text-anchor="end">
+        <text x="890" y="24">100%</text>
+        <text x="890" y="84">80%</text>
+        <text x="890" y="144">60%</text>
+        <text x="890" y="204">40%</text>
+      </g>
+      <path id="chart-actual" d="M0,190 L75,182 L150,178 L225,168 L300,162 L375,150 L450,148 L525,132 L600,120 L675,108 L750,96 L825,86 L900,74"
+        fill="none" stroke="var(--accent-green)" stroke-width="2.5" stroke-linecap="round" pathLength="1000"/>
+      <path id="chart-predicted" d="M600,120 L675,112 L750,102 L825,96 L900,90"
+        fill="none" stroke="var(--accent-cyan)" stroke-width="2.5" stroke-dasharray="5 7" stroke-linecap="round" pathLength="1000"/>
+    </svg>
+  </div>
+
+  <!-- ── Bottom row: live feed + digital twin ── -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+
+    <!-- Recent alerts mini-feed -->
+    <div class="glass" style="border-radius:4px;padding:24px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+        <span style="font-family:var(--font-mono);font-size:11px;text-transform:uppercase;color:var(--text-secondary)">Recent Alerts</span>
+        <a href="alerts.html" style="font-family:var(--font-mono);font-size:11px;color:var(--accent-cyan);text-decoration:none">View all →</a>
+      </div>
+      <div id="dash-alert-feed" style="display:flex;flex-direction:column;gap:10px">
+        <div style="color:var(--text-secondary);font-size:13px;font-family:var(--font-mono)">Loading alerts…</div>
+      </div>
+    </div>
+
+    <!-- Battery X-ray (from original) -->
+    <div class="glass" style="border-radius:4px;padding:24px">
+      <div style="font-family:var(--font-mono);font-size:11px;text-transform:uppercase;color:var(--text-secondary);margin-bottom:16px">Digital Twin · Asset #204</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:center">
+        <svg viewBox="0 0 300 300" style="width:100%;height:auto" id="xray-svg">
+          <rect id="xray-casing" x="60" y="40" width="180" height="220" rx="14" fill="var(--bg-elevated)" stroke="var(--border-divider)" stroke-width="2"/>
+          <rect x="120" y="20" width="20" height="20" rx="3" fill="var(--bg-elevated)" stroke="var(--border-divider)" stroke-width="2"/>
+          <rect x="160" y="20" width="20" height="20" rx="3" fill="var(--bg-elevated)" stroke="var(--border-divider)" stroke-width="2"/>
+          <g id="xray-cells">
+            <rect x="75" y="60" width="34" height="180" rx="6" stroke="var(--accent-cyan)" fill="rgba(0,229,255,0.06)" stroke-width="1.5"/>
+            <rect x="115" y="60" width="34" height="180" rx="6" stroke="var(--accent-cyan)" fill="rgba(0,229,255,0.06)" stroke-width="1.5"/>
+            <rect x="155" y="60" width="34" height="180" rx="6" fill="rgba(255,176,32,0.10)" stroke="var(--accent-amber)" stroke-width="1.5"/>
+            <rect x="195" y="60" width="34" height="180" rx="6" stroke="var(--accent-cyan)" fill="rgba(0,229,255,0.06)" stroke-width="1.5"/>
+            <circle cx="172" cy="150" r="9" fill="var(--accent-amber)" class="pulse-amber-dot"/>
+          </g>
+        </svg>
+        <div class="glass" style="padding:14px;font-family:var(--font-mono);font-size:11px">
+          <div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--border-divider)"><span style="color:var(--text-secondary)">CELL 03 TEMP</span><span id="twin-temp" style="color:var(--accent-amber)">41.8°C</span></div>
+          <div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--border-divider)"><span style="color:var(--text-secondary)">VOLTAGE</span><span id="twin-voltage" style="color:var(--accent-cyan)">3.61V</span></div>
+          <div style="display:flex;justify-content:space-between;padding:5px 0"><span style="color:var(--text-secondary)">HEALTH</span><span id="twin-health" style="color:var(--accent-green)">94%</span></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<!-- Connect Vehicle Modal -->
+<div class="modal-overlay" id="connect-modal" role="dialog" aria-modal="true">
+  <div class="modal-box">
+    <button class="modal-close">✕</button>
+    <div class="connect-step active">
+      <div class="eyebrow" style="margin-bottom:12px">Connect Vehicle</div>
+      <h3 class="font-display text-white" style="font-size:22px;font-weight:600;margin-bottom:20px">Add a vehicle</h3>
+      <label class="form-label">Vehicle ID</label>
+      <input class="form-input" id="connect-vehicle-id" placeholder="e.g. EV-014" style="margin-bottom:16px">
+      <label class="form-label">Model (optional)</label>
+      <input class="form-input" id="connect-vehicle-model" placeholder="e.g. Tata Nexon EV" style="margin-bottom:24px">
+      <button class="btn-primary" id="connect-confirm-btn" style="width:100%;justify-content:center">Connect Vehicle</button>
+    </div>
+    <div class="connect-step">
+      <div style="text-align:center;padding:16px 0">
+        <div style="font-size:48px;margin-bottom:16px">✅</div>
+        <h3 class="font-display text-white" style="font-size:20px;margin-bottom:20px"><span id="connected-vehicle-id" style="color:var(--accent-cyan)"></span> is live</h3>
+        <button class="btn-primary" id="connect-done-btn" style="width:100%;justify-content:center">Done</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+gsap.registerPlugin(ScrollTrigger);
+ScrollTrigger.create({
+  trigger: '#chart-actual', start: 'top 65%', once: true,
+  onEnter(){
+    ['chart-actual','chart-predicted'].forEach((id,i)=>{
+      const p = document.getElementById(id);
+      gsap.fromTo(p, { strokeDashoffset:1000 }, { strokeDashoffset:0, duration:1.8, delay:i*0.3, ease:'power2.out' });
+    });
+  }
+});
+</script>
+<script src="../js/app.js"></script>
+<script>
+// ─────────────────────────────────────────────────
+// DASHBOARD PAGE LOGIC
+// ─────────────────────────────────────────────────
+
+// ── Load and render alert mini-feed ──
+async function loadDashAlerts() {
+  try {
+    /*
+      BACKEND INTEGRATION: GET /api/v1/alerts?active_only=true&limit=4
+    */
+    const alerts = await api('/alerts?active_only=true&limit=4');
+    renderDashAlerts(alerts);
+  } catch {
+    // Demo data
+    renderDashAlerts([
+      { id:'1', vehicle_id:'EV-003', severity:'critical', message:'Cell temp 56°C — thermal risk', triggered_at: new Date().toISOString() },
+      { id:'2', vehicle_id:'EV-002', severity:'warning',  message:'SoH 78% — monitor', triggered_at: new Date(Date.now()-3600000).toISOString() },
+    ]);
+  }
+}
+
+function renderDashAlerts(alerts) {
+  const feed = document.getElementById('dash-alert-feed');
+  if (!alerts || alerts.length === 0) {
+    feed.innerHTML = '<div style="color:var(--accent-green);font-family:var(--font-mono);font-size:12px">✓ No active alerts</div>';
+    return;
+  }
+  const sevColor = { critical:'var(--accent-red)', warning:'var(--accent-amber)', info:'var(--accent-cyan)' };
+  feed.innerHTML = alerts.map(a => `
+    <div style="display:flex;align-items:flex-start;gap:10px;padding:10px;background:rgba(255,255,255,0.02);border-radius:2px;border-left:2px solid ${sevColor[a.severity]||'var(--text-secondary)'}">
+      <div style="flex:1">
+        <div style="display:flex;gap:8px;margin-bottom:4px">
+          <span class="badge badge-${a.severity}">${a.severity}</span>
+          <span style="font-family:var(--font-mono);font-size:11px;color:#fff">${a.vehicle_id}</span>
+        </div>
+        <div style="font-size:12px;color:var(--text-secondary)">${a.message}</div>
+      </div>
+    </div>
+  `).join('');
+
+  // Update critical count
+  const critCount = alerts.filter(a => a.severity === 'critical').length;
+  document.getElementById('dash-critical').textContent = critCount;
+  if (critCount > 0) document.getElementById('critical-pulse').style.display = 'block';
+}
+
+// ── Live telemetry polling for the dashboard ──
+async function pollDashboardTelemetry() {
+  try {
+    // BACKEND INTEGRATION: GET /api/v1/vehicles — real fleet averages,
+    // not hardcoded to one vehicle ID.
+    const vehicles = await api('/vehicles');
+    if (vehicles && vehicles.length > 0) {
+      const withSoh = vehicles.filter(v => v.latest_soh != null);
+      const withSoc = vehicles.filter(v => v.latest_soc != null);
+      const avgSoh = withSoh.length ? withSoh.reduce((s, v) => s + v.latest_soh, 0) / withSoh.length : null;
+      const avgSoc = withSoc.length ? withSoc.reduce((s, v) => s + v.latest_soc, 0) / withSoc.length : null;
+
+      if (avgSoh != null) {
+        document.getElementById('dash-soh').textContent = (avgSoh * 100).toFixed(1);
+        document.getElementById('dash-soh-delta').textContent = `Across ${withSoh.length} vehicle${withSoh.length === 1 ? '' : 's'}`;
+      }
+      if (avgSoc != null) {
+        const socPct = avgSoc * 100;
+        document.getElementById('dash-soc').textContent = socPct.toFixed(1);
+        document.getElementById('dash-soc-bar').style.width = socPct + '%';
+        document.getElementById('dash-soc-bar').style.background = socPct > 60 ? 'var(--accent-green)' : 'var(--accent-amber)';
+        document.getElementById('dash-soc-label').textContent = `Across ${withSoc.length} vehicle${withSoc.length === 1 ? '' : 's'}`;
+      }
+
+      // Voltage isn't in the fleet summary, so show live voltage for one
+      // real vehicle instead of a hardcoded, possibly-nonexistent ID.
+      const pick = vehicles[0].vehicle_id;
+      const data = await api(`/telemetry/${pick}/recent?limit=1`);
+      if (data && data[0]) {
+        const voltage = data[0].battery_voltage;
+        document.getElementById('dash-voltage').textContent = voltage ? voltage.toFixed(1) : '—';
+        document.getElementById('dash-voltage-bar').style.width = voltage ? Math.min(100, ((voltage - 300) / 150) * 100) + '%' : '0%';
+        document.getElementById('dash-voltage-label').textContent = `${pick} · Live`;
+        document.getElementById('twin-temp').textContent = data[0].temperature_cell ? data[0].temperature_cell.toFixed(1) + '°C' : '—';
+        document.getElementById('twin-voltage').textContent = voltage ? (voltage / 108).toFixed(2) + 'V' : '—';
+        document.getElementById('twin-health').textContent = data[0].state_of_health ? (data[0].state_of_health * 100).toFixed(0) + '%' : '—';
+      }
+    }
+  } catch {
+    // Backend offline — demo values stay
+  }
+
+  document.getElementById('last-updated').textContent = new Date().toLocaleTimeString();
+}
+
+// ── React to real-time alerts from WebSocket ──
+document.addEventListener('new-alert', e => {
+  loadDashAlerts(); // refresh the mini feed
+});
+
+// ── Init ──
+loadDashAlerts();
+pollDashboardTelemetry();
+setInterval(pollDashboardTelemetry, 5000); // refresh every 5s
+</script>
+</body>
+</html>

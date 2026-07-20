@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>ASSET/INTEL — EV Fleet Intelligence</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<link rel="stylesheet" href="css/styles.css">
+</head>
+<body class="antialiased">
+
+<!-- ══════════════════════════════════════════
+     NAVBAR
+══════════════════════════════════════════ -->
+<nav id="navbar" class="navbar glass">
+  <div class="navbar-inner">
+    <a href="index.html" class="navbar-logo">
+      <span class="dot pulse-green"></span>
+      ASSET<span style="color:var(--accent-cyan)">/</span>INTEL
+    </a>
+    <ul class="navbar-nav">
+      <li><a href="pages/fleet.html">Fleet</a></li>
+      <li><a href="pages/alerts.html">Alerts</a></li>
+      <li><a href="pages/predictions.html">Predictions</a></li>
+      <li><a href="pages/dashboard.html">Console</a></li>
+    </ul>
+    <!-- CONNECT VEHICLE BUTTON -->
+    <div style="display:flex;align-items:center;gap:12px">
+      <button class="magnetic btn-primary" style="padding:10px 20px;font-size:11px" data-open="connect-modal">
+        + Connect Vehicle
+      </button>
+      <a href="pages/dashboard.html" class="magnetic btn-secondary" style="padding:10px 20px;font-size:11px">
+        Launch Console
+      </a>
+    </div>
+  </div>
+</nav>
+
+<!-- ══════════════════════════════════════════
+     HERO
+══════════════════════════════════════════ -->
+<header id="top" class="relative min-h-screen flex items-center overflow-hidden grid-bg">
+  <div class="noise"></div>
+  <canvas id="globe-canvas" class="absolute inset-0 w-full h-full"></canvas>
+  <div class="absolute inset-0 pointer-events-none" style="background:linear-gradient(to bottom, rgba(11,15,23,0.1), transparent, var(--bg-base))"></div>
+  <div class="absolute inset-0 pointer-events-none" style="background:linear-gradient(to right, var(--bg-base), transparent, var(--bg-base))"></div>
+
+  <div class="relative z-10 max-w-7xl mx-auto px-6 md:px-10 pt-24 w-full">
+    <div class="flex items-center gap-3 mb-7" id="hero-eyebrow">
+      <span style="width:6px;height:6px;border-radius:50%;background:var(--accent-green);display:inline-block"></span>
+      <span class="eyebrow">SYSTEM STATUS: OPERATIONAL · NET ZERO PROTOCOL ACTIVE</span>
+    </div>
+
+    <h1 class="font-display font-semibold text-white leading-none tracking-tight" style="font-size:clamp(52px,8vw,88px);max-width:900px">
+      <span id="decrypt-line-1" style="display:block"></span>
+      <span id="decrypt-line-2" style="display:block;color:var(--accent-cyan)"></span>
+    </h1>
+
+    <p id="hero-sub" class="reveal mt-8 max-w-xl" style="font-size:17px;line-height:1.7;color:var(--text-primary)">
+      One console for every battery, every truck, every gram of lithium in your network — tracking asset health and supply chain integrity in real time, so failures are predicted weeks before they happen.
+    </p>
+
+    <div id="hero-cta" class="reveal mt-10" style="display:flex;flex-wrap:wrap;align-items:center;gap:16px">
+      <a href="pages/dashboard.html" class="magnetic btn-primary">Launch Console →</a>
+      <button class="magnetic btn-secondary" data-open="connect-modal">+ Connect Vehicle</button>
+    </div>
+
+    <div id="hero-stats" class="reveal mt-16" style="display:grid;grid-template-columns:repeat(3,1fr);max-width:480px;border-top:1px solid var(--border-divider);padding-top:24px;gap:0">
+      <div style="padding-right:24px">
+        <div class="font-mono" style="color:var(--accent-cyan);font-size:24px" id="stat-assets">14,208</div>
+        <div class="font-mono" style="font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--text-secondary);margin-top:4px">Assets tracked</div>
+      </div>
+      <div style="padding:0 24px;border-left:1px solid var(--border-divider)">
+        <div class="font-mono" style="color:var(--accent-green);font-size:24px">99.2%</div>
+        <div class="font-mono" style="font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--text-secondary);margin-top:4px">Uptime SLA</div>
+      </div>
+      <div style="padding-left:24px;border-left:1px solid var(--border-divider)">
+        <div class="font-mono" style="color:var(--accent-amber);font-size:24px">6 days</div>
+        <div class="font-mono" style="font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--text-secondary);margin-top:4px">Avg. warning lead time</div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<!-- ══════════════════════════════════════════
+     QUICK LINKS TO PAGES
+══════════════════════════════════════════ -->
+<section style="padding:80px 40px;max-width:80rem;margin:0 auto">
+  <span class="eyebrow">Platform modules</span>
+  <h2 class="font-display text-white" style="font-size:clamp(28px,4vw,48px);font-weight:600;margin-top:12px;margin-bottom:48px">Everything you need, in one place.</h2>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px">
+
+    <a href="pages/fleet.html" class="glass" style="display:block;padding:32px;border-radius:4px;text-decoration:none;transition:border-color .2s ease" onmouseover="this.style.borderColor='var(--accent-cyan)'" onmouseout="this.style.borderColor='var(--border-divider)'">
+      <div style="font-size:28px;margin-bottom:16px">🚗</div>
+      <div class="font-display text-white" style="font-size:18px;font-weight:600;margin-bottom:8px">Fleet Overview</div>
+      <div style="font-size:14px;line-height:1.6;color:var(--text-secondary)">All vehicles, health scores, and live telemetry at a glance.</div>
+    </a>
+
+    <a href="pages/alerts.html" class="glass" style="display:block;padding:32px;border-radius:4px;text-decoration:none;transition:border-color .2s ease" onmouseover="this.style.borderColor='var(--accent-red)'" onmouseout="this.style.borderColor='var(--border-divider)'">
+      <div style="font-size:28px;margin-bottom:16px">⛔</div>
+      <div class="font-display text-white" style="font-size:18px;font-weight:600;margin-bottom:8px">Alerts</div>
+      <div style="font-size:14px;line-height:1.6;color:var(--text-secondary)">Critical and warning alerts with real-time WebSocket updates.</div>
+    </a>
+
+    <a href="pages/predictions.html" class="glass" style="display:block;padding:32px;border-radius:4px;text-decoration:none;transition:border-color .2s ease" onmouseover="this.style.borderColor='var(--accent-green)'" onmouseout="this.style.borderColor='var(--border-divider)'">
+      <div style="font-size:28px;margin-bottom:16px">🔮</div>
+      <div class="font-display text-white" style="font-size:18px;font-weight:600;margin-bottom:8px">ML Predictions</div>
+      <div style="font-size:14px;line-height:1.6;color:var(--text-secondary)">Remaining useful life and SoH forecasts from your ML model.</div>
+    </a>
+
+    <a href="pages/dashboard.html" class="glass" style="display:block;padding:32px;border-radius:4px;text-decoration:none;transition:border-color .2s ease" onmouseover="this.style.borderColor='var(--accent-cyan)'" onmouseout="this.style.borderColor='var(--border-divider)'">
+      <div style="font-size:28px;margin-bottom:16px">📊</div>
+      <div class="font-display text-white" style="font-size:18px;font-weight:600;margin-bottom:8px">Live Console</div>
+      <div style="font-size:14px;line-height:1.6;color:var(--text-secondary)">Operator dashboard with charts, metrics, and degradation curves.</div>
+    </a>
+
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════
+     CONNECT VEHICLE MODAL
+══════════════════════════════════════════ -->
+<div class="modal-overlay" id="connect-modal" role="dialog" aria-modal="true" aria-label="Connect a vehicle">
+  <div class="modal-box">
+    <button class="modal-close" aria-label="Close">✕</button>
+
+    <!-- Step 0: Enter vehicle ID -->
+    <div class="connect-step active" id="step-0">
+      <div class="eyebrow" style="margin-bottom:12px">Connect Vehicle</div>
+      <h3 class="font-display text-white" style="font-size:24px;font-weight:600;margin-bottom:8px">Add a new vehicle to the fleet</h3>
+      <p style="font-size:14px;color:var(--text-secondary);margin-bottom:28px;line-height:1.6">
+        Enter the vehicle's unique ID. The system will register it and begin accepting telemetry.
+      </p>
+      <label class="form-label">Vehicle ID</label>
+      <input class="form-input" id="connect-vehicle-id" placeholder="e.g. EV-014" autocomplete="off" style="margin-bottom:16px">
+      <label class="form-label" style="margin-top:16px">Model (optional)</label>
+      <input class="form-input" id="connect-vehicle-model" placeholder="e.g. BYD Atto 3" autocomplete="off" style="margin-bottom:28px">
+      <button class="btn-primary" id="connect-confirm-btn" style="width:100%;justify-content:center">
+        Connect Vehicle
+      </button>
+    </div>
+
+    <!-- Step 1: Success -->
+    <div class="connect-step" id="step-1">
+      <div style="text-align:center;padding:16px 0">
+        <div style="font-size:48px;margin-bottom:20px">✅</div>
+        <div class="eyebrow" style="margin-bottom:8px;justify-content:center;display:flex">Connected</div>
+        <h3 class="font-display text-white" style="font-size:22px;font-weight:600;margin-bottom:10px">
+          Vehicle <span id="connected-vehicle-id" style="color:var(--accent-cyan)"></span> is live
+        </h3>
+        <p style="font-size:14px;color:var(--text-secondary);margin-bottom:28px;line-height:1.6">
+          The vehicle has been registered. Send telemetry to <span style="color:var(--accent-cyan);font-family:var(--font-mono)">POST /api/v1/telemetry</span> to start seeing data.
+        </p>
+        <button class="btn-primary" id="connect-done-btn" style="width:100%;justify-content:center">
+          View Fleet →
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Scripts -->
+<script>
+gsap.registerPlugin(ScrollTrigger);
+const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/* Globe */
+(function(){
+  const canvas = document.getElementById('globe-canvas');
+  const renderer = new THREE.WebGLRenderer({ canvas, alpha:true, antialias:true });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(55, window.innerWidth/window.innerHeight, 0.1, 100);
+  camera.position.z = 5.2;
+  function resize(){ const w=window.innerWidth,h=window.innerHeight; renderer.setSize(w,h); camera.aspect=w/h; camera.updateProjectionMatrix(); }
+  resize(); window.addEventListener('resize', resize);
+  const count=2600, geo=new THREE.BufferGeometry();
+  const positions=new Float32Array(count*3), colorsArr=new Float32Array(count*3);
+  const cyan=new THREE.Color(0x00E5FF), green=new THREE.Color(0x2EE6A6);
+  for(let i=0;i<count;i++){
+    const phi=Math.acos(-1+(2*i)/count), theta=Math.sqrt(count*Math.PI)*phi, r=2.15;
+    positions[i*3]=r*Math.cos(theta)*Math.sin(phi); positions[i*3+1]=r*Math.sin(theta)*Math.sin(phi); positions[i*3+2]=r*Math.cos(phi);
+    const c=Math.random()>0.8?green:cyan; colorsArr[i*3]=c.r; colorsArr[i*3+1]=c.g; colorsArr[i*3+2]=c.b;
+  }
+  geo.setAttribute('position',new THREE.BufferAttribute(positions,3)); geo.setAttribute('color',new THREE.BufferAttribute(colorsArr,3));
+  const mat=new THREE.PointsMaterial({size:0.028,vertexColors:true,transparent:true,opacity:0.85,depthWrite:false});
+  const points=new THREE.Points(geo,mat); scene.add(points);
+  const core=new THREE.Mesh(new THREE.SphereGeometry(1.4,32,32), new THREE.MeshBasicMaterial({color:0x00E5FF,transparent:true,opacity:0.03,wireframe:true}));
+  scene.add(core);
+  let mx=0,my=0; window.addEventListener('mousemove',e=>{ mx=e.clientX/window.innerWidth-.5; my=e.clientY/window.innerHeight-.5; });
+  (function animate(){ requestAnimationFrame(animate); points.rotation.y+=0.0011; core.rotation.y-=0.0007; if(!reduceMotion){ points.rotation.x+=(my*.4-points.rotation.x)*.02; points.rotation.y+=mx*.001; } renderer.render(scene,camera); })();
+})();
+
+/* Decrypt text */
+(function(){
+  const chars="!<>-_\\/[]{}—=+*^?#";
+  function decrypt(el,txt){ let f=0; el.setAttribute('aria-label',txt); const iv=setInterval(()=>{ let o=""; for(let i=0;i<txt.length;i++){ if(i<f/3) o+=txt[i]; else if(txt[i]===" ") o+=" "; else o+=chars[Math.floor(Math.random()*chars.length)]; } el.textContent=o; f++; if(f/3>=txt.length){ el.textContent=txt; clearInterval(iv); } },28); }
+  if(reduceMotion){ document.getElementById('decrypt-line-1').textContent="Predictive intelligence"; document.getElementById('decrypt-line-2').textContent="for every EV asset."; }
+  else { setTimeout(()=>decrypt(document.getElementById('decrypt-line-1'),"Predictive intelligence"),200); setTimeout(()=>decrypt(document.getElementById('decrypt-line-2'),"for every EV asset."),900); }
+})();
+
+gsap.timeline({delay:reduceMotion?0:1.9})
+  .to('#hero-eyebrow',{opacity:1,duration:0.01})
+  .from('#hero-sub',{opacity:0,y:20,duration:0.6,ease:'power2.out'},0)
+  .to('#hero-sub',{opacity:1,duration:0.01},0)
+  .from('#hero-cta',{opacity:0,y:20,duration:0.6,ease:'power2.out'},0.12)
+  .to('#hero-cta',{opacity:1,duration:0.01},0.12)
+  .from('#hero-stats',{opacity:0,y:20,duration:0.6,ease:'power2.out'},0.24)
+  .to('#hero-stats',{opacity:1,duration:0.01},0.24);
+
+ScrollTrigger.create({ start:100, end:99999, toggleClass:{targets:'#navbar',className:'shadow-lg'} });
+</script>
+<script src="js/app.js"></script>
+</body>
+</html>

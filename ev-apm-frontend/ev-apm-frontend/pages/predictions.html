@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>ML Predictions — ASSET/INTEL</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="../css/styles.css">
+</head>
+<body class="antialiased">
+
+<nav class="navbar glass">
+  <div class="navbar-inner">
+    <a href="../index.html" class="navbar-logo">
+      <span class="dot pulse-green"></span>
+      ASSET<span style="color:var(--accent-cyan)">/</span>INTEL
+    </a>
+    <ul class="navbar-nav">
+      <li><a href="fleet.html">Fleet</a></li>
+      <li><a href="alerts.html">Alerts</a></li>
+      <li><a href="predictions.html">Predictions</a></li>
+      <li><a href="dashboard.html">Console</a></li>
+    </ul>
+    <button class="btn-primary magnetic" style="padding:10px 20px;font-size:11px" data-open="connect-modal">
+      + Connect Vehicle
+    </button>
+  </div>
+</nav>
+
+<div class="page-hero">
+  <span class="eyebrow">ML model output</span>
+  <h1>Battery Predictions</h1>
+  <p>Remaining Useful Life (RUL) and State of Health forecasts from your trained ML model.</p>
+</div>
+
+<main style="max-width:80rem;margin:0 auto;padding:0 40px 80px">
+
+  <!-- Vehicle selector -->
+  <div class="glass" style="border-radius:4px;padding:24px;margin-bottom:24px;display:flex;align-items:center;gap:16px;flex-wrap:wrap">
+    <div style="flex:1;min-width:200px">
+      <label class="form-label">Vehicle ID</label>
+      <input class="form-input" id="pred-vehicle-input" placeholder="e.g. EV-001" style="max-width:240px"
+             onkeydown="if(event.key==='Enter'){event.preventDefault();runPrediction();}">
+    </div>
+    <div style="align-self:flex-end">
+      <button class="btn-primary" id="run-predict-btn" onclick="runPrediction()">
+        Run ML Prediction →
+      </button>
+    </div>
+    <div style="font-family:var(--font-mono);font-size:11px;color:var(--text-secondary);align-self:flex-end;padding-bottom:2px">
+      Calls your ML model API via the backend
+    </div>
+  </div>
+
+  <!-- Results (hidden until prediction runs) -->
+  <div id="prediction-results" style="display:none">
+
+    <!-- RUL + SoH forecast cards -->
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:24px">
+
+      <div class="metric-card">
+        <div class="label">Remaining Useful Life <span style="width:6px;height:6px;border-radius:50%;background:var(--accent-green);display:inline-block"></span></div>
+        <div class="value"><span id="rul-days">—</span><span style="font-size:20px"> days</span></div>
+        <div class="delta" id="rul-months" style="color:var(--text-secondary)"></div>
+      </div>
+
+      <div class="metric-card">
+        <div class="label">SoH in 30 days</div>
+        <div class="value"><span id="soh-30d">—</span><span>%</span></div>
+        <div class="delta" id="soh-30d-trend" style="color:var(--text-secondary)"></div>
+      </div>
+
+      <div class="metric-card">
+        <div class="label">SoH in 90 days</div>
+        <div class="value"><span id="soh-90d">—</span><span>%</span></div>
+        <div class="delta" id="soh-90d-trend" style="color:var(--text-secondary)"></div>
+      </div>
+
+      <div class="metric-card">
+        <div class="label">Degradation Rate</div>
+        <div class="value" style="font-size:36px"><span id="deg-rate">—</span><span style="font-size:18px">%/100c</span></div>
+        <div class="delta" id="confidence-score" style="color:var(--text-secondary)"></div>
+      </div>
+
+    </div>
+
+    <!-- SoH forecast timeline bar -->
+    <div class="glass" style="border-radius:4px;padding:28px;margin-bottom:24px">
+      <div style="font-family:var(--font-mono);font-size:11px;text-transform:uppercase;color:var(--text-secondary);margin-bottom:20px">SoH Forecast Timeline</div>
+      <div style="display:flex;flex-direction:column;gap:14px">
+        <div>
+          <div style="display:flex;justify-content:space-between;font-family:var(--font-mono);font-size:12px;margin-bottom:6px">
+            <span style="color:var(--text-secondary)">Now</span><span id="now-soh-label" style="color:#fff">—%</span>
+          </div>
+          <div class="live-gauge-track"><div class="live-gauge-fill" id="now-soh-bar" style="background:var(--accent-cyan)"></div></div>
+        </div>
+        <div>
+          <div style="display:flex;justify-content:space-between;font-family:var(--font-mono);font-size:12px;margin-bottom:6px">
+            <span style="color:var(--text-secondary)">+30 days</span><span id="f30-soh-label" style="color:#fff">—%</span>
+          </div>
+          <div class="live-gauge-track"><div class="live-gauge-fill" id="f30-soh-bar" style="background:var(--accent-green)"></div></div>
+        </div>
+        <div>
+          <div style="display:flex;justify-content:space-between;font-family:var(--font-mono);font-size:12px;margin-bottom:6px">
+            <span style="color:var(--text-secondary)">+90 days</span><span id="f90-soh-label" style="color:#fff">—%</span>
+          </div>
+          <div class="live-gauge-track"><div class="live-gauge-fill" id="f90-soh-bar" style="background:var(--accent-amber)"></div></div>
+        </div>
+        <!-- Replacement threshold line indicator -->
+        <div style="font-family:var(--font-mono);font-size:11px;color:var(--accent-red);margin-top:4px">
+          ⛔ Replacement threshold: 60% SoH
+        </div>
+      </div>
+    </div>
+
+    <!-- Recommendations -->
+    <div class="glass" style="border-radius:4px;padding:28px">
+      <div style="font-family:var(--font-mono);font-size:11px;text-transform:uppercase;color:var(--text-secondary);margin-bottom:20px">Charging Recommendations</div>
+      <div id="recommendations-list">
+        <div style="color:var(--text-secondary);font-size:14px">Loading recommendations…</div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Loading state -->
+  <div id="pred-loading" style="display:none;text-align:center;padding:80px">
+    <div style="font-family:var(--font-mono);font-size:14px;color:var(--text-secondary)">Calling ML model API…</div>
+  </div>
+
+  <!-- Idle state -->
+  <div id="pred-idle" style="text-align:center;padding:80px">
+    <div style="font-size:40px;margin-bottom:16px">🔮</div>
+    <div class="font-display text-white" style="font-size:20px;font-weight:600;margin-bottom:8px">Enter a Vehicle ID to get predictions</div>
+    <p style="color:var(--text-secondary);max-width:400px;margin:0 auto 24px">The backend will pull the last 50 telemetry readings, build features, and call your trained ML model.</p>
+  </div>
+
+</main>
+
+<!-- Connect Vehicle Modal -->
+<div class="modal-overlay" id="connect-modal" role="dialog" aria-modal="true">
+  <div class="modal-box">
+    <button class="modal-close">✕</button>
+    <div class="connect-step active">
+      <div class="eyebrow" style="margin-bottom:12px">Connect Vehicle</div>
+      <h3 class="font-display text-white" style="font-size:22px;font-weight:600;margin-bottom:20px">Add a vehicle</h3>
+      <label class="form-label">Vehicle ID</label>
+      <input class="form-input" id="connect-vehicle-id" placeholder="e.g. EV-014" style="margin-bottom:16px">
+      <label class="form-label">Model (optional)</label>
+      <input class="form-input" id="connect-vehicle-model" placeholder="e.g. Tata Nexon EV" style="margin-bottom:24px">
+      <button class="btn-primary" id="connect-confirm-btn" style="width:100%;justify-content:center">Connect Vehicle</button>
+    </div>
+    <div class="connect-step">
+      <div style="text-align:center;padding:16px 0">
+        <div style="font-size:48px;margin-bottom:16px">✅</div>
+        <h3 class="font-display text-white" style="font-size:20px;margin-bottom:20px"><span id="connected-vehicle-id" style="color:var(--accent-cyan)"></span> is live</h3>
+        <button class="btn-primary" id="connect-done-btn" style="width:100%;justify-content:center">Done</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="../js/app.js"></script>
+<script>
+// Pre-fill vehicle ID from URL param (e.g. predictions.html?vehicle=EV-001)
+const urlVehicle = new URLSearchParams(window.location.search).get('vehicle');
+if (urlVehicle) {
+  document.getElementById('pred-vehicle-input').value = urlVehicle;
+  // Auto-run prediction if vehicle was passed in URL
+  window.addEventListener('load', () => setTimeout(runPrediction, 300));
+}
+
+async function runPrediction() {
+  const vehicleId = document.getElementById('pred-vehicle-input').value.trim();
+  if (!vehicleId) { toast('Enter a Vehicle ID first', 'error'); return; }
+
+  // Show loading
+  document.getElementById('pred-idle').style.display    = 'none';
+  document.getElementById('prediction-results').style.display = 'none';
+  document.getElementById('pred-loading').style.display = 'block';
+  document.getElementById('run-predict-btn').textContent = 'Running…';
+  document.getElementById('run-predict-btn').disabled   = true;
+
+  try {
+    /*
+      BACKEND INTEGRATION:
+      Calls GET /api/v1/predictions/{vehicle_id}
+      This endpoint:
+        1. Fetches last 50 telemetry rows from PostgreSQL
+        2. Builds feature vector
+        3. Calls your ML model API
+        4. Returns RUL, SoH forecasts, degradation rate
+    */
+    const pred = await api(`/predictions/${vehicleId}`);
+    renderPrediction(vehicleId, pred);
+
+    // Also load recommendations
+    try {
+      const recs = await api(`/recommendations/${vehicleId}`);
+      renderRecommendations(recs);
+    } catch {
+      document.getElementById('recommendations-list').innerHTML =
+        '<div style="color:var(--text-secondary);font-size:14px">Could not load recommendations</div>';
+    }
+
+  } catch (err) {
+    // DEMO data if backend offline
+    const demoPred = {
+      rul_days: 187, rul_months: 6.2,
+      soh_forecast_30d: 0.81, soh_forecast_90d: 0.77,
+      degradation_rate: 1.2, confidence_score: 0.91,
+      prediction_note: 'Demo mode — connect backend for real predictions'
+    };
+    // Fake current SoH
+    demoPred._current_soh = 0.83;
+    renderPrediction(vehicleId, demoPred);
+    renderRecommendations([
+      { rec_type:'charge_window', message:'Charge overnight (22:00–06:00) when ambient temperatures are lower — slows capacity loss', charge_limit_pct:80, priority:2 },
+      { rec_type:'limit_dc', message:'DC fast charging used in 45% of sessions — switching to AC when possible will reduce wear', charge_limit_pct:80, priority:2 },
+    ]);
+    toast('Demo mode — showing example predictions', 'info');
+  } finally {
+    document.getElementById('pred-loading').style.display = 'none';
+    document.getElementById('prediction-results').style.display = 'block';
+    document.getElementById('run-predict-btn').textContent = 'Run ML Prediction →';
+    document.getElementById('run-predict-btn').disabled   = false;
+  }
+}
+
+function renderPrediction(vehicleId, pred) {
+  const rul   = pred.rul_days ?? 0;
+  const f30   = (pred.soh_forecast_30d ?? 0) * 100;
+  const f90   = (pred.soh_forecast_90d ?? 0) * 100;
+  const cur   = (pred.predicted_soh ?? pred._current_soh ?? pred.soh_forecast_30d + 0.02) * 100;
+  const deg   = pred.degradation_rate ?? 0;
+  const conf  = pred.confidence_score ?? 0;
+
+  document.getElementById('rul-days').textContent    = rul;
+  document.getElementById('rul-months').textContent  = `≈ ${pred.rul_months ?? (rul/30).toFixed(1)} months · ${pred.prediction_note || ''}`;
+  document.getElementById('soh-30d').textContent     = f30.toFixed(1);
+  document.getElementById('soh-30d-trend').textContent= `vs current ${cur.toFixed(1)}%`;
+  document.getElementById('soh-90d').textContent     = f90.toFixed(1);
+  document.getElementById('soh-90d-trend').textContent= `${(f90 - cur).toFixed(1)}% change over 90 days`;
+  document.getElementById('deg-rate').textContent    = deg.toFixed(2);
+  document.getElementById('confidence-score').textContent = `Model confidence: ${(conf * 100).toFixed(0)}%`;
+
+  // Forecast bars
+  const barColor = (pct) => pct >= 80 ? 'var(--accent-green)' : pct >= 60 ? 'var(--accent-amber)' : 'var(--accent-red)';
+  document.getElementById('now-soh-label').textContent = cur.toFixed(1) + '%';
+  document.getElementById('now-soh-bar').style.width   = cur + '%';
+  document.getElementById('now-soh-bar').style.background = barColor(cur);
+  document.getElementById('f30-soh-label').textContent = f30.toFixed(1) + '%';
+  document.getElementById('f30-soh-bar').style.width   = f30 + '%';
+  document.getElementById('f30-soh-bar').style.background = barColor(f30);
+  document.getElementById('f90-soh-label').textContent = f90.toFixed(1) + '%';
+  document.getElementById('f90-soh-bar').style.width   = f90 + '%';
+  document.getElementById('f90-soh-bar').style.background = barColor(f90);
+}
+
+function renderRecommendations(recs) {
+  if (!recs || recs.length === 0) {
+    document.getElementById('recommendations-list').innerHTML = '<div style="color:var(--accent-green);font-size:14px;font-family:var(--font-mono)">✓ No recommendations — battery habits are good</div>';
+    return;
+  }
+  const icons = { charge_window:'🕙', limit_dc:'⚡', replace:'🔴', maintain:'✅' };
+  document.getElementById('recommendations-list').innerHTML = recs.map(r => `
+    <div style="display:flex;align-items:flex-start;gap:14px;padding:16px 0;border-bottom:1px solid var(--border-divider)">
+      <span style="font-size:20px;flex-shrink:0">${icons[r.rec_type] || '💡'}</span>
+      <div style="flex:1">
+        <div style="font-family:var(--font-mono);font-size:10px;text-transform:uppercase;color:var(--text-secondary);margin-bottom:5px">${r.rec_type.replace('_',' ')}</div>
+        <div style="font-size:14px;line-height:1.6;color:var(--text-primary)">${r.message}</div>
+        ${r.charge_limit_pct ? `<div style="font-family:var(--font-mono);font-size:12px;color:var(--accent-cyan);margin-top:6px">Charge limit: ${r.charge_limit_pct}%</div>` : ''}
+      </div>
+    </div>
+  `).join('');
+}
+</script>
+</body>
+</html>

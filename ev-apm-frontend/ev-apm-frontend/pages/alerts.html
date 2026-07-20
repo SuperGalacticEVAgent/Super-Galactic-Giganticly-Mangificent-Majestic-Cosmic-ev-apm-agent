@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Alerts — ASSET/INTEL</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="../css/styles.css">
+</head>
+<body class="antialiased">
+
+<nav class="navbar glass">
+  <div class="navbar-inner">
+    <a href="../index.html" class="navbar-logo">
+      <span class="dot pulse-green"></span>
+      ASSET<span style="color:var(--accent-cyan)">/</span>INTEL
+    </a>
+    <ul class="navbar-nav">
+      <li><a href="fleet.html">Fleet</a></li>
+      <li><a href="alerts.html">Alerts</a></li>
+      <li><a href="predictions.html">Predictions</a></li>
+      <li><a href="dashboard.html">Console</a></li>
+    </ul>
+    <button class="btn-primary magnetic" style="padding:10px 20px;font-size:11px" data-open="connect-modal">
+      + Connect Vehicle
+    </button>
+  </div>
+</nav>
+
+<div class="page-hero">
+  <span class="eyebrow">Real-time monitoring</span>
+  <h1>Alert Feed</h1>
+  <p>Critical and warning alerts from across the fleet, updated live via WebSocket as new events arrive.</p>
+</div>
+
+<main style="max-width:80rem;margin:0 auto;padding:0 40px 80px">
+
+  <!-- Filters + status bar -->
+  <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:24px">
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button class="filter-btn active-filter" data-sev="all"  onclick="setFilter('all',this)"  style="font-family:var(--font-mono);font-size:11px;padding:6px 14px;border-radius:2px;border:1px solid var(--accent-cyan);background:rgba(0,229,255,.1);color:var(--accent-cyan);cursor:pointer;text-transform:uppercase">All</button>
+      <button class="filter-btn" data-sev="critical" onclick="setFilter('critical',this)" style="font-family:var(--font-mono);font-size:11px;padding:6px 14px;border-radius:2px;border:1px solid var(--border-divider);background:none;color:var(--text-secondary);cursor:pointer;text-transform:uppercase">Critical</button>
+      <button class="filter-btn" data-sev="warning"  onclick="setFilter('warning',this)"  style="font-family:var(--font-mono);font-size:11px;padding:6px 14px;border-radius:2px;border:1px solid var(--border-divider);background:none;color:var(--text-secondary);cursor:pointer;text-transform:uppercase">Warning</button>
+      <button class="filter-btn" data-sev="info"     onclick="setFilter('info',this)"     style="font-family:var(--font-mono);font-size:11px;padding:6px 14px;border-radius:2px;border:1px solid var(--border-divider);background:none;color:var(--text-secondary);cursor:pointer;text-transform:uppercase">Info</button>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px;font-family:var(--font-mono);font-size:11px;color:var(--text-secondary);text-transform:uppercase">
+      <span class="pulse-green" style="width:6px;height:6px;border-radius:50%;background:var(--accent-green);display:inline-block"></span>
+      <span id="ws-status">Connecting…</span>
+      <span style="margin-left:12px">Total: <span id="alert-total" style="color:#fff">0</span></span>
+    </div>
+  </div>
+
+  <!-- Alert list -->
+  <div id="alert-list" style="display:flex;flex-direction:column;gap:10px">
+    <div style="text-align:center;padding:60px;color:var(--text-secondary);font-family:var(--font-mono);font-size:13px">
+      Loading alerts…
+    </div>
+  </div>
+
+  <!-- Empty state -->
+  <div id="no-alerts" style="display:none;text-align:center;padding:80px 40px">
+    <div style="font-size:40px;margin-bottom:12px">✅</div>
+    <div class="font-display text-white" style="font-size:20px;font-weight:600;margin-bottom:8px">All clear</div>
+    <p style="color:var(--text-secondary)">No active alerts matching this filter.</p>
+  </div>
+
+</main>
+
+<!-- Connect Vehicle Modal -->
+<div class="modal-overlay" id="connect-modal" role="dialog" aria-modal="true">
+  <div class="modal-box">
+    <button class="modal-close">✕</button>
+    <div class="connect-step active">
+      <div class="eyebrow" style="margin-bottom:12px">Connect Vehicle</div>
+      <h3 class="font-display text-white" style="font-size:22px;font-weight:600;margin-bottom:20px">Add a vehicle to the fleet</h3>
+      <label class="form-label">Vehicle ID</label>
+      <input class="form-input" id="connect-vehicle-id" placeholder="e.g. EV-014" style="margin-bottom:16px">
+      <label class="form-label">Model (optional)</label>
+      <input class="form-input" id="connect-vehicle-model" placeholder="e.g. Tata Nexon EV" style="margin-bottom:24px">
+      <button class="btn-primary" id="connect-confirm-btn" style="width:100%;justify-content:center">Connect Vehicle</button>
+    </div>
+    <div class="connect-step">
+      <div style="text-align:center;padding:16px 0">
+        <div style="font-size:48px;margin-bottom:16px">✅</div>
+        <h3 class="font-display text-white" style="font-size:20px;margin-bottom:20px">
+          <span id="connected-vehicle-id" style="color:var(--accent-cyan)"></span> is live
+        </h3>
+        <button class="btn-primary" id="connect-done-btn" style="width:100%;justify-content:center">Done</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="../js/app.js"></script>
+<script>
+// ─────────────────────────────────────────────────
+// ALERTS PAGE LOGIC
+// ─────────────────────────────────────────────────
+
+let allAlerts = [];
+let currentFilter = 'all';
+
+// Read vehicle filter from URL (e.g. alerts.html?vehicle=EV-001)
+const urlVehicle = new URLSearchParams(window.location.search).get('vehicle');
+
+// ── Load initial alert history from backend ──
+async function loadAlerts() {
+  try {
+    /*
+      BACKEND INTEGRATION:
+      Calls GET /api/v1/alerts
+      Optional query params: ?vehicle_id=EV-001&active_only=true
+    */
+    let url = '/alerts?active_only=true&limit=50';
+    if (urlVehicle) url += `&vehicle_id=${urlVehicle}`;
+    const data = await api(url);
+    allAlerts = data;
+    renderAlerts();
+    document.getElementById('ws-status').textContent = 'Live · connected';
+  } catch {
+    // DEMO DATA — replace with real API
+    allAlerts = [
+      { id:'1', vehicle_id:'EV-003', severity:'critical', alert_type:'thermal', message:'Cell temperature 56.2°C — thermal runaway risk', triggered_at: new Date().toISOString() },
+      { id:'2', vehicle_id:'EV-003', severity:'critical', alert_type:'soh_low', message:'State of health 61% — schedule replacement', triggered_at: new Date(Date.now()-3600000).toISOString() },
+      { id:'3', vehicle_id:'EV-002', severity:'warning',  alert_type:'soh_low', message:'State of health 78% — monitor closely', triggered_at: new Date(Date.now()-7200000).toISOString() },
+      { id:'4', vehicle_id:'EV-002', severity:'info',    alert_type:'dc_overuse', message:'DC fast charging 62% of sessions — consider AC charging', triggered_at: new Date(Date.now()-86400000).toISOString() },
+    ];
+    if (urlVehicle) allAlerts = allAlerts.filter(a => a.vehicle_id === urlVehicle);
+    renderAlerts();
+    document.getElementById('ws-status').textContent = 'Demo mode (backend offline)';
+  }
+}
+
+// ── Render alert list ──
+function renderAlerts() {
+  const filtered = currentFilter === 'all' ? allAlerts : allAlerts.filter(a => a.severity === currentFilter);
+  document.getElementById('alert-total').textContent = filtered.length;
+
+  if (filtered.length === 0) {
+    document.getElementById('alert-list').innerHTML = '';
+    document.getElementById('no-alerts').style.display = 'block';
+    return;
+  }
+  document.getElementById('no-alerts').style.display = 'none';
+
+  const sevColor = { critical:'var(--accent-red)', warning:'var(--accent-amber)', info:'var(--accent-cyan)' };
+  const sevIcon  = { critical:'⛔', warning:'⚠', info:'ℹ' };
+
+  document.getElementById('alert-list').innerHTML = filtered.map(a => {
+    const col = sevColor[a.severity] || 'var(--text-secondary)';
+    const ago = timeAgo(a.triggered_at);
+    return `
+      <div class="glass" id="alert-${a.id}" style="border-radius:4px;padding:20px 24px;border-left:3px solid ${col};display:flex;align-items:flex-start;justify-content:space-between;gap:16px">
+        <div style="display:flex;align-items:flex-start;gap:16px;flex:1">
+          <span style="font-size:20px;flex-shrink:0;margin-top:1px">${sevIcon[a.severity]}</span>
+          <div>
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;flex-wrap:wrap">
+              <span class="badge badge-${a.severity}">${a.severity}</span>
+              <span style="font-family:var(--font-mono);font-size:12px;color:#fff;font-weight:500">${a.vehicle_id}</span>
+              <span style="font-family:var(--font-mono);font-size:10px;color:var(--text-secondary);text-transform:uppercase">${a.alert_type}</span>
+            </div>
+            <div style="font-size:14px;color:var(--text-primary);line-height:1.5">${a.message}</div>
+            <div style="font-family:var(--font-mono);font-size:11px;color:var(--text-secondary);margin-top:8px">${ago}</div>
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;flex-shrink:0">
+          <a href="predictions.html?vehicle=${a.vehicle_id}" style="font-family:var(--font-mono);font-size:11px;color:var(--accent-cyan);text-decoration:none">Predict →</a>
+          <button class="btn-danger" onclick="resolveAlert('${a.id}',this)" style="font-size:10px;padding:5px 10px">Resolve</button>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+// ── Resolve an alert ──
+async function resolveAlert(alertId, btn) {
+  btn.textContent = '…';
+  btn.disabled = true;
+  try {
+    /*
+      BACKEND INTEGRATION:
+      Calls PATCH /api/v1/alerts/{alertId}/resolve
+    */
+    await api(`/alerts/${alertId}/resolve`, { method: 'PATCH' });
+    allAlerts = allAlerts.filter(a => a.id !== alertId);
+    renderAlerts();
+    toast('Alert resolved', 'success');
+  } catch {
+    // Demo: remove from local list
+    allAlerts = allAlerts.filter(a => a.id !== alertId);
+    renderAlerts();
+    toast('Alert resolved (demo)', 'info');
+  }
+}
+
+// ── Filter buttons ──
+function setFilter(sev, btn) {
+  currentFilter = sev;
+  document.querySelectorAll('.filter-btn').forEach(b => {
+    b.style.borderColor = 'var(--border-divider)';
+    b.style.background  = 'none';
+    b.style.color       = 'var(--text-secondary)';
+  });
+  btn.style.borderColor = 'var(--accent-cyan)';
+  btn.style.background  = 'rgba(0,229,255,.1)';
+  btn.style.color       = 'var(--accent-cyan)';
+  renderAlerts();
+}
+
+// ── Real-time: prepend new alerts as they arrive ──
+document.addEventListener('new-alert', e => {
+  const alert = e.detail;
+  if (urlVehicle && alert.vehicle_id !== urlVehicle) return;
+  allAlerts.unshift(alert);
+  renderAlerts();
+});
+
+// ── Utility: human-readable time ago ──
+function timeAgo(isoStr) {
+  const diff = Date.now() - new Date(isoStr).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return 'Just now';
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  return `${Math.floor(hrs / 24)}d ago`;
+}
+
+loadAlerts();
+</script>
+</body>
+</html>
